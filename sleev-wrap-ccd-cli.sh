@@ -108,26 +108,23 @@ write_shim() { printf '%s\n' "$SHIM_TEXT" > "$1"; chmod +x "$1"; }
 # 1. Remove dangling shims: a shim whose .sleev-real was deleted by an app update
 #    would fail to exec, breaking sessions outright. Deleting it lets the app
 #    re-download that version cleanly if it ever needs it.
-#    Also remove originals whose name is gone: when the app prunes an old
-#    version it deletes the name but not our hard link, leaving ~250MB behind.
-#    Running sessions keep their open copy, so this is safe.
-remove_stale() {
-  local v r
-  for v in *; do
-    is_candidate "$v" || continue
-    if is_our_shim "$v" && [[ ! -f $v.sleev-real ]]; then
-      rm -f -- "$v"
-      echo "$(date -Is) removed dangling shim $v (original deleted by app update)"
-    fi
-  done
-  for r in *.sleev-real; do
-    [[ -e ${r%.sleev-real} ]] && continue
-    rm -f -- "$r"
-    echo "$(date -Is) removed orphaned $r (version pruned by the app)"
-  done
-  # Temp shims left by an interrupted run; none are live while we hold the lock.
-  rm -f -- .*.sleev-tmp
-}
+for v in *; do
+  is_candidate "$v" || continue
+  if is_our_shim "$v" && [[ ! -f $v.sleev-real ]]; then
+    rm -f -- "$v"
+    echo "$(date -Is) removed dangling shim $v (original deleted by app update)"
+  fi
+done
+# Also remove originals whose name is gone: when the app prunes an old version
+# it deletes the name but not our hard link, leaving ~250MB behind. Running
+# sessions keep their open copy, so this is safe.
+for r in *.sleev-real; do
+  [[ -e ${r%.sleev-real} ]] && continue
+  rm -f -- "$r"
+  echo "$(date -Is) removed orphaned $r (version pruned by the app)"
+done
+# Temp shims left by an interrupted run; none are live while we hold the lock.
+rm -f -- .*.sleev-tmp
 
 # 2. Wrap any unwrapped version binary.
 #    Speed matters: on an update the app respawns its open sessions on the new
@@ -175,47 +172,30 @@ wrap_one() {
 }
 
 # Known names first, so a slow unfamiliar file can't hold up a real update.
-wrap_new() {
-  local v
-  for v in *; do
-    is_candidate "$v" && is_known_name "$v" || continue
-    head -c4 -- "$v" | grep -q ELF && wrap_one "$v"
-  done
-  for v in *; do
-    is_candidate "$v" && ! is_known_name "$v" || continue
-    head -c4 -- "$v" | grep -q ELF && wrap_one "$v"
-  done
-}
+for v in *; do
+  is_candidate "$v" && is_known_name "$v" || continue
+  head -c4 -- "$v" | grep -q ELF && wrap_one "$v"
+done
+for v in *; do
+  is_candidate "$v" && ! is_known_name "$v" || continue
+  head -c4 -- "$v" | grep -q ELF && wrap_one "$v"
+done
 
 # 3. Refresh shims written by an older version of this script, so changes to
 #    SHIM_TEXT reach versions that are already wrapped.
-refresh_shims() {
-  local v tmp
-  for v in *; do
-    is_candidate "$v" || continue
-    [[ -f $v.sleev-real ]] || continue
-    is_our_shim "$v" || continue
-    if [[ $(cat -- "$v") != "$SHIM_TEXT" ]]; then
-      # Replace by rename, never rewrite in place: a session starting mid-write
-      # would exec a half-written file, and a running shim (bash reads scripts
-      # as it goes) would read the new bytes at its old offset.
-      tmp=".$v.sleev-tmp"
-      if ! { write_shim "$tmp" && mv -f -- "$tmp" "$v"; }; then
-        rm -f -- "$tmp"
-        continue
-      fi
-      echo "$(date -Is) refreshed shim $v"
+for v in *; do
+  is_candidate "$v" || continue
+  [[ -f $v.sleev-real ]] || continue
+  is_our_shim "$v" || continue
+  if [[ $(cat -- "$v") != "$SHIM_TEXT" ]]; then
+    # Replace by rename, never rewrite in place: a session starting mid-write
+    # would exec a half-written file, and a running shim (bash reads scripts
+    # as it goes) would read the new bytes at its old offset.
+    tmp=".$v.sleev-tmp"
+    if ! { write_shim "$tmp" && mv -f -- "$tmp" "$v"; }; then
+      rm -f -- "$tmp"
+      continue
     fi
-  done
-}
-
-# Repeat while the folder keeps changing. systemd doesn't queue a second run
-# for events that arrive while this one is busy (say, in a settle wait), so a
-# binary that lands mid-run would otherwise wait for the 45s timer.
-for _ in 1 2 3 4 5; do
-  before=$(ls -A)
-  remove_stale
-  wrap_new
-  refresh_shims
-  [[ $(ls -A) == "$before" ]] && break
+    echo "$(date -Is) refreshed shim $v"
+  fi
 done
