@@ -1,0 +1,7 @@
+[Unit]
+Description=Reconnect Claude Code desktop sessions that bypass Sleev
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/sleev-check-sessions.sh
+TimeoutStartSec=60

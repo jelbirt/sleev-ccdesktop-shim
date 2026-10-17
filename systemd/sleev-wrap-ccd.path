@@ -1,0 +1,10 @@
+[Unit]
+Description=Watch Claude Code desktop ccd-cli directory for new CLI versions
+StartLimitIntervalSec=0
+
+[Path]
+PathModified=%h/.claude/remote/ccd-cli
+MakeDirectory=no
+
+[Install]
+WantedBy=default.target

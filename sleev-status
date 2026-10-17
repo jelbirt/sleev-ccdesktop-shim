@@ -1,0 +1,57 @@
+#!/bin/bash
+# Quick check: is desktop Claude Code actually routing through Sleev right now?
+python3 - <<'PY'
+import fnmatch, glob, os, sqlite3
+d = os.path.expanduser('~/.claude/remote/ccd-cli')
+
+# Same skip list as is_candidate in sleev-wrap-ccd-cli.sh; keep them in sync.
+SKIP = ['.*', '*.sleev-real', '*.tmp*', '*.part*', '*.download*', '*.zst',
+        '*.lock', '*~', '*.so', '*.so.*', '*.node']
+def managed(f):
+    return (not any(fnmatch.fnmatch(f, p) for p in SKIP)
+            and os.path.isfile(os.path.join(d, f)))
+
+if not os.path.isdir(d):
+    print("BINARIES: no", d, "(are Desktop sessions running in this WSL distro?)")
+else:
+    unwrapped = []
+    for f in sorted(filter(managed, os.listdir(d))):
+        with open(os.path.join(d, f), 'rb') as fh:
+            if fh.read(4) == b'\x7fELF':
+                unwrapped.append(f)
+    print("BINARIES:", "all wrapped" if not unwrapped else "UNWRAPPED: " + ", ".join(unwrapped))
+
+def session_exe(pid):
+    try:
+        exe = os.readlink('/proc/%s/exe' % pid)
+    except OSError:
+        return False
+    return os.path.dirname(exe.replace(' (deleted)', '')) == d
+
+good = bad = 0
+for p in glob.glob('/proc/[0-9]*'):
+    pid = p.split('/')[2]
+    try:
+        if not session_exe(pid):
+            continue
+        # Skip a session's own helper processes, like the checker does.
+        with open(p + '/status') as fh:
+            ppid = next(l.split()[1] for l in fh if l.startswith('PPid:'))
+        if session_exe(ppid):
+            continue
+        with open(p + '/environ', 'rb') as fh:
+            env = fh.read().split(b'\0')
+        url = [e.split(b'=', 1)[1] for e in env if e.startswith(b'ANTHROPIC_BASE_URL=')]
+        if url and b'127.0.0.1' in url[0]: good += 1
+        else: bad += 1
+    except (OSError, StopIteration):
+        pass
+print("SESSIONS: %d via gateway, %d direct%s" % (good, bad, "  <-- QUIT AND RELAUNCH THE APP" if bad else ""))
+
+try:
+    db = sqlite3.connect('file:' + os.path.expanduser('~/.local/share/sleev/sleeve.sqlite') + '?mode=ro', uri=True)
+    last = db.execute("SELECT MAX(received_at) FROM tracking WHERE session_id IS NOT NULL").fetchone()[0]
+    print("LAST GATEWAY REQUEST:", last, "UTC")
+except sqlite3.Error as e:
+    print("LAST GATEWAY REQUEST: unknown (Sleev database not readable: %s)" % e)
+PY

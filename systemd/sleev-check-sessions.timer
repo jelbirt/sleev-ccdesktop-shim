@@ -1,0 +1,13 @@
+[Unit]
+Description=Periodic check for Claude Code sessions bypassing Sleev
+# An update's respawned sessions appear ~2.5s after the new binary lands; this
+# catches any that beat the wrap within about half a minute.
+
+[Timer]
+OnBootSec=60s
+OnUnitActiveSec=20s
+AccuracySec=5s
+Unit=sleev-check-sessions.service
+
+[Install]
+WantedBy=timers.target

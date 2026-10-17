@@ -1,0 +1,13 @@
+[Unit]
+Description=Periodic backstop for Sleev ccd-cli wrapping
+# Independent of inotify: if the .path unit dies or misses an event, this still
+# re-wraps within a couple of minutes.
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=45s
+AccuracySec=30s
+Unit=sleev-wrap-ccd.service
+
+[Install]
+WantedBy=timers.target

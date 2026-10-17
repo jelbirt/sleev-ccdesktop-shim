@@ -1,0 +1,10 @@
+[Unit]
+Description=Wrap Claude Code desktop CLI binaries with Sleev shim
+# No start rate limit: an app update fires many file events in seconds, and the
+# default 5-starts-per-10s limit killed this unit (and its .path) on 2026-08-25.
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/sleev-wrap-ccd-cli.sh
+TimeoutStartSec=300
