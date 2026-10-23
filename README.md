@@ -8,10 +8,11 @@ claude.ai connectors keep working.
 > on undocumented Claude Desktop internals (the `ccd-cli` folder and how the
 > app launches sessions), so any app update can break it.
 
-**WSL only.** This does anything only if Claude Code Desktop runs its sessions
-inside WSL. To check, run `ls ~/.claude/remote/ccd-cli` inside WSL: it should
-list version-numbered files. If the folder doesn't exist, your sessions run
-natively on Windows and this setup won't help.
+**WSL first.** The setup below works when Claude Code Desktop runs its
+sessions inside WSL. To check, run `ls ~/.claude/remote/ccd-cli` inside WSL: it
+should list version-numbered files. If the folder doesn't exist, your sessions
+run natively on Windows; see [windows/](windows/README.md) for an experimental
+native version (antivirus currently blocks it on at least one setup).
 
 **1M context is on by default.** The shim adds `[1m]` to every non-Haiku model
 the app picks, which asks for the 1M-token context window instead of 200K. If
@@ -69,8 +70,8 @@ app's menu drops it.
 
 ## Requirements
 
-- Claude Code Desktop running its sessions in **WSL** (or Linux). If sessions
-  run natively on Windows, none of this applies.
+- Claude Code Desktop running its sessions in **WSL** (or Linux). For native
+  Windows sessions, see [windows/](windows/README.md).
 - systemd enabled in WSL (`[boot] systemd=true` in `/etc/wsl.conf`), plus
   `loginctl enable-linger $USER`.
 - Sleev installed and signed in **inside the same WSL distro**, gateway on
