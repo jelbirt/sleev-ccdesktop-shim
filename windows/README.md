@@ -82,12 +82,28 @@ Compiles the launcher into `%LOCALAPPDATA%\sleev-shim`, wraps the binaries
 already installed, registers the `SleevCcdShim` logon task, and starts it. If
 you downloaded a ZIP instead of cloning, run `Unblock-File windows\*` first.
 
-Then fully quit Claude Desktop (tray icon, Quit) and reopen it, and check:
+Sessions you start from then on go through Sleev. Sessions already open keep
+running direct until the watcher reconnects them once idle; to switch them at
+once, fully quit Claude Desktop (tray icon, Quit) and reopen it. Then check:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File windows\sleev-status.ps1
 ```
-Should report all binaries wrapped and 0 direct sessions.
+With one session open, a healthy setup looks like:
+
+```
+BINARIES: all wrapped (3)
+SESSIONS: 1 via gateway, 0 direct
+GATEWAY: up at http://127.0.0.1:17321
+WATCHER: scheduled task Running
+```
+
+## Update
+
+Fully quit Claude Desktop, `git pull`, then run `windows\install.ps1` again.
+It recompiles the launcher and replaces it in every wrapped folder. A folder
+still in use keeps the old launcher (the installer says how many); quit Claude
+and re-run it to finish.
 
 ## Uninstall
 
@@ -119,3 +135,6 @@ because Windows won't delete a running exe.
 - Untested: wrapping a version while a session is running from it. The
   watcher tries `File.Replace` first and falls back to rename-then-copy.
 - Logs: `%LOCALAPPDATA%\sleev-shim\shim-fallback.log`.
+
+Tested on Windows 11 with Claude Desktop 3.6556.2.0 (CLI 2.1.304 and 2.1.308),
+Windows PowerShell 5.1 and Windows Defender, October 2026.
