@@ -5,10 +5,10 @@ WSL. Same idea as the WSL setup in the [main README](../README.md): a small
 launcher stands in for each CLI binary the app installs, points the session at
 the local Sleev gateway, and starts the real binary.
 
-> **Experimental and not yet working end to end.** Every piece below was tested
-> on its own, but no native session has yet run through Sleev, because the
-> launcher is blocked by antivirus on the only machine tried so far (see
-> [Antivirus](#antivirus)). Expect to need an exclusion.
+> **Experimental.** Verified end to end on one machine (Windows Defender,
+> 2026-10-23): a native Desktop session ran through Sleev. McAfee blocks the
+> launcher, so third-party antivirus may need an exclusion (see
+> [Antivirus](#antivirus)).
 
 ## Why a shim is needed
 
@@ -49,7 +49,7 @@ the file doesn't trigger a re-download.
 
 ## Antivirus
 
-On the test machine, McAfee quarantined the launcher the first time it ran
+With McAfee active, it quarantined the launcher the first time it ran
 (detection "Real Protect-LS", a machine-learning verdict). Cut-down builds with
 no network code at all were flagged too; a test program that starts nothing
 was not. The trigger is what a launcher is: an unknown, unsigned exe that
@@ -57,10 +57,10 @@ starts another exe with a changed environment. Changing the code won't avoid
 it.
 
 - Compiling locally avoids SmartScreen, but not this.
-- Windows Defender was not tested (it was passive on that machine).
+- Windows Defender allowed it (tested 2026-10-23, real-time protection on).
 - Windows 11 Smart App Control, if on, blocks unsigned exes outright.
 
-To try it anyway, add an antivirus exclusion for `%LOCALAPPDATA%\sleev-shim`
+If your antivirus blocks it, add an exclusion for `%LOCALAPPDATA%\sleev-shim`
 and for the app's `claude-code` folder (path above). A code-signed build would
 be the real fix.
 

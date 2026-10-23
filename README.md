@@ -12,7 +12,7 @@ claude.ai connectors keep working.
 sessions inside WSL. To check, run `ls ~/.claude/remote/ccd-cli` inside WSL: it
 should list version-numbered files. If the folder doesn't exist, your sessions
 run natively on Windows; see [windows/](windows/README.md) for an experimental
-native version (antivirus currently blocks it on at least one setup).
+native version (works with Windows Defender; McAfee blocks it).
 
 **1M context is on by default.** The shim adds `[1m]` to every non-Haiku model
 the app picks, which asks for the 1M-token context window instead of 200K. If
