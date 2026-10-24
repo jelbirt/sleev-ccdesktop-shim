@@ -8,8 +8,8 @@
 # when it started. Sleev never sees either kind, so nothing else will notice.
 #
 # Killing such a session is safe once it is idle: the app shows "Session was
-# interrupted" and respawns it through the shim on the next message, and Sleev
-# continues the same session (tested 2026-10-08). So for each bypassed session:
+# interrupted" and respawns it through the shim on the next message, resuming
+# the same transcript (tested 2026-10-08). So for each bypassed session:
 #   idle, gateway up, every version wrapped -> SIGTERM it and notify
 #   otherwise                               -> notify once, retry next run
 # Run by sleev-check-sessions.timer.

@@ -93,7 +93,7 @@ function Invoke-WrapPass {
             Rename-Item -LiteralPath $r.FullName -NewName $LauncherName
             $script:skip[$dir] = $true
             Write-ShimLog "launcher missing in $dir (antivirus?); restored the original, sessions here run direct"
-            Show-Toast 'Sleev: launcher was removed' 'Probably your antivirus. Sessions run direct (not tracked) until you add an exclusion; see the README.'
+            Show-Toast 'Sleev: launcher was removed' 'Probably your antivirus. Sessions run direct (not tracked) until you add an exclusion; see Antivirus in windows\README.md.'
         } catch {
             if (-not $script:failed[$dir]) { Write-ShimLog "restore failed for $dir : $($_.Exception.Message)" }
             $script:failed[$dir] = $true

@@ -12,12 +12,15 @@ claude.ai connectors keep working.
 sessions inside WSL. To check, run `ls ~/.claude/remote/ccd-cli` inside WSL: it
 should list version-numbered files. If the folder doesn't exist, your sessions
 run natively on Windows; see [windows/](windows/README.md) for an experimental
-native version (works with Windows Defender; McAfee blocks it).
+native version (works with Windows Defender; McAfee blocks it). The rest of
+this README covers the WSL version only; the Windows version has its own
+install, notes and uninstall steps there.
 
 **1M context is on by default.** The shim adds `[1m]` to every non-Haiku model
 the app picks, which asks for the 1M-token context window instead of 200K. If
 your plan doesn't include it, requests may fail, and on API billing long
-prompts can cost more. To turn it off, see Notes.
+prompts can cost more. To turn it off, see Notes (or the Windows README's
+Notes).
 
 ## How it works
 
@@ -60,7 +63,9 @@ the gateway. Once one is idle (last turn ended, nothing written for 10s, no
 child processes or running subagents), and the gateway is up and every binary
 is wrapped, it terminates that session and shows a Windows notification. The
 app shows "Session was interrupted", and your next message respawns the
-session through the shim; Sleev continues the same session. A session is
+session through the shim. The conversation carries on where it left off
+(the app resumes the same transcript), though Sleev may log the respawned
+process as a new session. A session is
 restarted at most once per 10 minutes, so it can't loop.
 
 **Limits.** A session that loses the race runs direct until it next goes idle,

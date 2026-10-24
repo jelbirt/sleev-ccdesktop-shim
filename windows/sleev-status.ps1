@@ -18,7 +18,7 @@ if ($wrapped + $unwrapped.Count -eq 0) {
 $s = @(Get-Sessions)
 $routed = @($s | Where-Object { $_.Kind -eq 'routed' }).Count
 $direct = $s.Count - $routed
-$note = if ($direct -gt 0) { '  <-- QUIT AND RELAUNCH THE APP' } else { '' }
+$note = if ($direct -gt 0) { '  <-- reconnected once idle (quit and reopen the app to switch now)' } else { '' }
 Write-Host "SESSIONS: $routed via gateway, $direct direct$note"
 
 Write-Host ('GATEWAY: ' + $(if (Test-GatewayUp) { "up at $GatewayUrl" } else { "UNREACHABLE at $GatewayUrl" }))

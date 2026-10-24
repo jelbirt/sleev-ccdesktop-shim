@@ -61,14 +61,17 @@ it.
 - Windows 11 Smart App Control, if on, blocks unsigned exes outright.
 
 If your antivirus blocks it, add an exclusion for `%LOCALAPPDATA%\sleev-shim`
-and for the app's `claude-code` folder (path above). A code-signed build would
-be the real fix.
+and for the app's `claude-code` folder (path above), then run
+`windows\install.ps1` again so the launcher is rebuilt and put back. A
+code-signed build would be the real fix.
 
 ## Requirements
 
 - Claude Code Desktop running sessions natively on Windows.
 - Sleev running and reachable at `http://127.0.0.1:17321` from Windows (Sleev
-  inside WSL works under WSL's default localhost forwarding).
+  inside WSL works under WSL's default localhost forwarding). If Sleev runs in
+  WSL, the distro has to be running: after a reboot, sessions run direct until
+  you open WSL and Sleev starts. They are reconnected once idle after that.
 - Windows 10 or 11 with .NET Framework 4 (included).
 
 ## Install
@@ -98,7 +101,7 @@ GATEWAY: up at http://127.0.0.1:17321
 WATCHER: scheduled task Running
 ```
 
-## Update
+## Updating the shim
 
 Fully quit Claude Desktop, `git pull`, then run `windows\install.ps1` again.
 It recompiles the launcher and replaces it in every wrapped folder. A folder
@@ -114,7 +117,53 @@ powershell -ExecutionPolicy Bypass -File windows\uninstall.ps1
 ```
 Removes the task, puts every original `claude.exe` back, and deletes
 `%LOCALAPPDATA%\sleev-shim`. It refuses to run while sessions are open,
-because Windows won't delete a running exe.
+because Windows won't delete a running exe. Keep your clone (or unzipped folder):
+the uninstaller lives there, not in the install folder. If you deleted it,
+download the repo again and run this.
+
+## Notes
+
+- Different gateway port: change `GatewayUrl` in `sleev-launcher.cs` and
+  `$GatewayPort` in `sleev-common.ps1`, then fully quit Claude Desktop and run
+  `install.ps1` again (see Updating the shim).
+- Don't want the 1M context tag? In `sleev-launcher.cs`, replace
+  `TagModel(ArgsAfterProgramName(Environment.CommandLine))` with
+  `ArgsAfterProgramName(Environment.CommandLine)`, then fully quit Claude
+  Desktop and run `install.ps1` again.
+- App updates need nothing from you: the watcher wraps a new version within
+  5s and reconnects any session that started before that once it is idle.
+- The launcher treats anything that answers on the gateway port as Sleev.
+  Don't run anything else on that port: it would receive your Claude
+  credentials.
+
+## Troubleshooting
+
+Run `windows\sleev-status.ps1` first.
+
+- `GATEWAY: UNREACHABLE`: Sleev isn't running, or (if it lives in WSL) WSL
+  isn't. Start it; direct sessions are reconnected once idle.
+- `BINARIES: UNWRAPPED`: the watcher isn't running or can't replace the file.
+  If `WATCHER` isn't `Running`, run `install.ps1` again. Otherwise check the
+  log for `wrap failed` or `launcher missing` (see
+  [Antivirus](#antivirus)).
+- `SESSIONS: ... N direct` for more than a minute with the gateway up and
+  `BINARIES: all wrapped`: those
+  sessions are busy or can't be restarted (see Limits). Fully quit and reopen
+  Claude Desktop to switch them.
+
+The log is `%LOCALAPPDATA%\sleev-shim\shim-fallback.log`. Lines to look for:
+`gateway unreachable ... running DIRECT` (a session started while Sleev was
+down), `launcher missing ... (antivirus?)` (see [Antivirus](#antivirus)),
+`wrap failed` and `could not start`.
+
+To report a problem, open a GitHub issue with your Windows, Claude Desktop and
+Sleev versions, your antivirus, the `sleev-status.ps1` output, and the last 50
+log lines:
+
+```powershell
+Get-Content "$env:LOCALAPPDATA\sleev-shim\shim-fallback.log" -Tail 50
+```
+Look it over before posting; it includes your username in paths.
 
 ## Limits
 
@@ -134,7 +183,9 @@ because Windows won't delete a running exe.
   session could land on that unwrapped version.
 - Untested: wrapping a version while a session is running from it. The
   watcher tries `File.Replace` first and falls back to rename-then-copy.
-- Logs: `%LOCALAPPDATA%\sleev-shim\shim-fallback.log`.
+- 3P installs (`Claude-3p`) are wrapped too but untested. The launcher sets
+  its own gateway URL, so it replaces any custom gateway URL and headers the 3P setup uses.
+- Untested on Windows 10 and on ARM PCs.
 
 Tested on Windows 11 with Claude Desktop 3.6556.2.0 (CLI 2.1.304 and 2.1.308),
 Windows PowerShell 5.1 and Windows Defender, October 2026.

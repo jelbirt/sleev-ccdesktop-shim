@@ -71,5 +71,6 @@ Remove-Item Env:\SLEEV_WATCH_ONCE
 Start-ScheduledTask -TaskName $TaskName
 
 Write-Host ''
-Write-Host 'Done. Fully quit Claude Desktop (tray icon, Quit) and reopen it, then check with:'
+Write-Host 'Done. New sessions now go through Sleev. Sessions already open switch once idle,'
+Write-Host 'or at once if you fully quit Claude Desktop (tray icon, Quit) and reopen it. Check with:'
 Write-Host "  powershell -ExecutionPolicy Bypass -File `"$(Join-Path $PSScriptRoot 'sleev-status.ps1')`""
