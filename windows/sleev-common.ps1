@@ -92,13 +92,13 @@ function Write-ShimLog([string]$msg) {
 #              before its version was wrapped
 # Our launcher is also a claude.exe started by the app; it is told apart by
 # having a claude.sleev-real.exe child, or by being younger than
-# LauncherMaxAge (still probing the gateway, no child yet). Names compare
-# case-insensitively, so the app (Claude.exe) is identified by its path, which
-# is outside claude-code.
+# LauncherMaxAge (still probing the gateway, no child yet). The app is
+# identified by its path, which is outside claude-code, so its own exe name
+# doesn't matter.
 function Get-Sessions {
-    $all = @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
-        Where-Object { $_.Name -eq $LauncherName -or $_.Name -eq $RealName })
-    $byPid = @{}; foreach ($p in $all) { $byPid[[int]$p.ProcessId] = $p }
+    $procs = @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue)
+    $byPid = @{}; foreach ($p in $procs) { $byPid[[int]$p.ProcessId] = $p }
+    $all = @($procs | Where-Object { $_.Name -eq $LauncherName -or $_.Name -eq $RealName })
     $hasRealChild = @{}
     foreach ($p in $all) { if ($p.Name -eq $RealName) { $hasRealChild[[int]$p.ParentProcessId] = $true } }
     $markers = @{}
@@ -108,6 +108,8 @@ function Get-Sessions {
     foreach ($p in $all) {
         if (-not (Test-IsCliPath $p.ExecutablePath)) { continue }
         $parent = $byPid[[int]$p.ParentProcessId]
+        # A parent newer than its child is a reused pid, not the real parent.
+        if ($parent -and $parent.CreationDate -gt $p.CreationDate) { $parent = $null }
         if ($p.Name -eq $RealName) {
             $m = $markers[[string]$p.ProcessId]
             $kind = if ($m -and $m.LastWriteTime -ge $p.CreationDate) { 'fallback' } else { 'routed' }
